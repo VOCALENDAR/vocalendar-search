@@ -76,6 +76,9 @@ jQuery.event.add(window, "load", function(){
 				this.completeFunc = _completeFunc;
 			}
 			param['alt'] = 'json-in-script'
+			param['singleevents'] = true;
+			//param['recurrence-expansion-end'] = '2012-12-31T23:59:59Z';
+			param['start-max'] = '2012-12-31T23:59:59Z';
 			request = $.ajax({
 								//url: this.url + this.calendarId + '/events',
 								url: this.url + this.calendarId + '/public/full',
@@ -189,11 +192,15 @@ jQuery.event.add(window, "load", function(){
 				
 				// イベント属性
 				var title = $('<p>').addClass('title').text(eventData.title.$t);
-				var time  = eventData.gd$when[0];
-				var start = $('<p>').addClass('time start').text(time.startTime);
-				var end   = $('<p>').addClass('time start').text(time.startTime);
 				var where = $('<p>').addClass('where').text(eventData.gd$where[0].valueString);
 				var content = $('<p>').addClass('content').text(eventData.content.$t);
+				var start = '';
+				var end   = '';
+				if ( eventData.gd$when ) {
+					var time  = eventData.gd$when[0];
+					var start = $('<p>').addClass('time start').text(time.startTime);
+					var end   = $('<p>').addClass('time start').text(time.startTime);
+				}
 				
 				// 属性をイベントに追加
 				event.append(title);
@@ -201,6 +208,7 @@ jQuery.event.add(window, "load", function(){
 				event.append(end);
 				event.append(where);
 				event.append(content);
+
 				
 				// ルートにイベントを追加
 				events.append(event);
