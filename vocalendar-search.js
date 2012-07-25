@@ -1,5 +1,5 @@
 // body.onloadイベントと同時にクラス定義やらなにやらを実行
-jQuery.event.add(window, "load", function(){
+jQuery( function(){
 
 	/**
 	 * Vocalendarクラス定義
