@@ -77,7 +77,10 @@ jQuery( function(){
 			}
 			param['alt'] = 'json-in-script'
 			param['singleevents'] = true;
-			param['recurrence-expansion-end'] = '2013-12-31T23:59:59Z';
+			param['orderby'] = 'starttime';
+			param['sortorder'] = 'ascending';
+			// 設定しても反映されない・・・謎。
+			//param['recurrence-expansion-end'] = '2013-12-31T23:59:59Z';
 			param['start-max'] = '2015-12-31T23:59:59Z';
 			request = $.ajax({
 								//url: this.url + this.calendarId + '/events',
