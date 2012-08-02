@@ -1,5 +1,86 @@
 // body.onloadイベントと同時にクラス定義やらなにやらを実行
-jQuery( function(){
+jQuery( function($new){
+
+	if (typeof (exDate) != 'undefined') {
+		// 2重読み込み防止（ありえないけどｗ
+		return;
+	};
+	exDate = function(){};
+
+	exDate.RFC3339 = function( _date ){
+		if ( !_date ) {
+			_date = new Date();
+		}
+		this.date = _date;
+	};
+	$.extend(exDate.RFC3339, {
+	
+		parse : function( str ) {
+			var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+			if ( m ) {
+				return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 0, 0, 0);
+			}
+			
+			var offset = (new Date()).getTimezoneOffset() * 60 * 1000;
+			var year = null;
+			var mon = null;
+			var day = null;
+			var hour = 0;
+			var min = 0;
+			var sec = 0;
+			
+			var m = str.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)(Z|([+-])(\d{2}):(\d{2}))$/);
+			if ( m ) {
+				year = parseInt(m[1]);
+				mon = parseInt(m[2]);
+				day = parseInt(m[3]);
+				hour = parseInt(m[4]);
+				min = parseInt(m[5]);
+				sec = parseInt(m[6]);
+				if ( m[7] != 'Z' ) {
+					offset += ( m[8] == '+' ? 1 : -1 ) * (parseInt(m[9], 10) * 60 + parseInt(m[10], 10)) * 1000 * 60;
+				}
+			} else {
+				return new Date(1970, 1, 1, 0, 0, 0);
+			}
+			
+			return new Date(new Date(year, mon - 1, day, hour, min, sec).getTime() - offset);
+		},
+		
+		dummy : 'dummy'
+	
+	});
+
+	$.extend(exDate.RFC3339.prototype, {
+	
+		toString : function() {
+		
+			filZero = function( str ) {
+				return str.length == 1 ? str : '0' + str;
+			};
+		
+			var str = this.date.getFullYear();
+			str += '-';
+			str += filZero(this.date.getMonth() + 1 );
+			str += '-';
+			str += filZero(this.date.getDate());
+			str += 'T';
+			str += filZero(this.date.getHours());
+			str += ':';
+			str += filZero(this.date.getMinutes());
+			str += ':';
+			str += filZero(this.date.getSeconds());
+			str += 'Z';
+			return  str; 
+		},
+		
+		addDays : function(num) {
+			this.date.setTime(this.date.getTime() + num * 86400000);
+		},
+		
+		dummy : 'dummy'
+	
+	});
 
 	/**
 	 * Vocalendarクラス定義
@@ -194,7 +275,8 @@ jQuery( function(){
 				event.attr( 'id', 'event_' + i);
 				
 				// イベント属性
-				var title = $('<p>').addClass('title').text(eventData.title.$t);
+				var title = $('<p>').addClass('title').add('shadeTrigger').text(eventData.title.$t);
+				var shadeContainer = $('<div>').addClass('shadeContainer').addClass('none');
 				var where = $('<p>').addClass('where').text(eventData.gd$where[0].valueString);
 				var content = $('<p>').addClass('content').text(eventData.content.$t);
 				var start = '';
@@ -205,14 +287,21 @@ jQuery( function(){
 					var end   = $('<p>').addClass('time end').text(time.endTime);
 				}
 				
+				// UIイベントを追加
+				title.click(function(event) {
+					var shadeTarget = jQuery(event.target).parent().find('.shadeContainer');
+					shadeTarget.toggleClass('none');
+				
+				});
+				
 				// 属性をイベントに追加
 				event.append(title);
-				event.append(start);
-				event.append(end);
-				event.append(where);
-				event.append(content);
+				event.append(shadeContainer);
+				shadeContainer.append(start);
+				shadeContainer.append(end);
+				shadeContainer.append(where);
+				shadeContainer.append(content);
 
-				
 				// ルートにイベントを追加
 				events.append(event);
 				
