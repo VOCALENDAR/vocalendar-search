@@ -7,18 +7,17 @@ jQuery( function($){
 	};
 	exDate = function(){};
 
-	exDate.RFC3339 = function( _date ){
-		if ( !_date ) {
-			_date = new Date();
-		}
-		this.date = _date;
+	exDate.RFC3339 = function( _date, _isTimeEvent ){
+		this.date = !_date ? new Date() : _date;
+		this.isTimeEvent = _isTimeEvent ? true : false;
 	};
+
 	$.extend(exDate.RFC3339, {
 	
 		parse : function( str ) {
 			var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 			if ( m ) {
-				return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 0, 0, 0);
+				return new exDate.RFC3339( new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 0, 0, 0) );
 			}
 			
 			var offset = (new Date()).getTimezoneOffset() * 60 * 1000;
@@ -41,10 +40,10 @@ jQuery( function($){
 					offset += ( m[8] == '+' ? 1 : -1 ) * (parseInt(m[9], 10) * 60 + parseInt(m[10], 10)) * 1000 * 60;
 				}
 			} else {
-				return new Date(1970, 1, 1, 0, 0, 0);
+				return new exDate.RFC3339( new Date(1970, 1, 1, 0, 0, 0) );
 			}
 			
-			return new Date(new Date(year, mon - 1, day, hour, min, sec).getTime() - offset);
+			return new exDate.RFC3339( new Date(new Date(year, mon - 1, day, hour, min, sec).getTime() - offset), true );
 		},
 		
 		dummy : 'dummy'
@@ -56,7 +55,7 @@ jQuery( function($){
 		toString : function() {
 		
 			filZero = function( str ) {
-				return str.length == 1 ? str : '0' + str;
+				return ('' + str).length == 1 ? '0' + str : str;
 			};
 		
 			var str = this.date.getFullYear();
@@ -76,6 +75,18 @@ jQuery( function($){
 		
 		addDays : function(num) {
 			this.date.setTime(this.date.getTime() + num * 86400000);
+			return this;
+		},
+		
+		addMonth : function(num) {
+			this.date = new Date(this.date.getFullYear(), this.date.getMonth() + num,
+								 this.date.getDate(), this.date.getHours(), this.date.getMinutes(), this.date.getSeconds());
+			return this;
+
+		},
+		
+		addYear : function(num) {
+			return this.addMonth( num * 12 );
 		},
 		
 		dummy : 'dummy'
@@ -162,7 +173,7 @@ jQuery( function($){
 			param['sortorder'] = 'ascending';
 			// 設定しても反映されない・・・謎。
 			//param['recurrence-expansion-end'] = '2013-12-31T23:59:59Z';
-			param['start-max'] = '2015-12-31T23:59:59Z';
+			param['start-max'] = (new exDate.RFC3339()).addYear(3).toString();
 			request = $.ajax({
 								//url: this.url + this.calendarId + '/events',
 								url: this.url + this.calendarId + '/public/full',
