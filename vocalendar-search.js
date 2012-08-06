@@ -1,5 +1,5 @@
 // body.onloadイベントと同時にクラス定義やらなにやらを実行
-jQuery( function($new){
+jQuery( function($){
 
 	if (typeof (exDate) != 'undefined') {
 		// 2重読み込み防止（ありえないけどｗ
