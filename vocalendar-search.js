@@ -6,7 +6,11 @@ jQuery( function($){
 		return;
 	};
 	exDate = function(){};
-
+	/**
+	 * コンストラクタ
+	 * @param _date Dateオブジェクト　nullはシステム年月日を設定
+	 * @param _isTimeEvent nullはTrue
+	 */
 	exDate.RFC3339 = function( _date, _isTimeEvent ){
 		this.date = !_date ? new Date() : _date;
 		this.isTimeEvent = _isTimeEvent ? true : false;
@@ -24,6 +28,11 @@ jQuery( function($){
 		         'dummy' : []
 		},
 
+		/**
+		 * 文字列をRFC3339形式と見なしてexDate.RFC3339オブジェクトを生成
+		 * @param str パースする文字列
+		 * @Author gull08
+		 */
 		parse : function( str ) {
 			var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 			if ( m ) {
@@ -65,7 +74,11 @@ jQuery( function($){
 		_filZero : function( str ) {
 			return ('' + str).length == 1 ? '0' + str : str;
 		},
-		
+
+		/**
+		 * 指定したフォーマットで年月日を出力。ディフォルトはyyyy-MM-dd形式
+		 * @param formatter yyyy:年、MM:月、dd:日 を対応する数値に変換する。
+		 */
 		toDateString : function( formatter ) {
 			var target = formatter ? formatter : 'yyyy-MM-dd';
 			target = target.replace('yyyy', this.date.getFullYear());
@@ -73,7 +86,11 @@ jQuery( function($){
 			target = target.replace('dd', this._filZero(this.date.getDate()));
 			return  target; 
 		},
-		
+
+		/**
+		 * 指定したフォーマットで時分秒を出力。ディフォルトはHH:mm:ss形式
+		 * @param formatter HH:時、mm:分、ss:秒 を対応する数値に変換する。
+		 */
 		toTimeString : function( formatter ) {
 			var target = formatter ? formatter : 'HH:mm:ss';
 			target = target.replace('HH', this._filZero(this.date.getHours()));
@@ -82,30 +99,51 @@ jQuery( function($){
 			return  target; 
 		},
 	
-		toString : function() {
+		/**
+		 * RFC3339形式で年月日時分秒を出力
+		 */		toString : function() {
 			return this.toDateString() + 'T' + this.toTimeString() + 'Z'; 
 		},
 		
-		addDate : function(num) {
+		/**
+		 * 日付計算
+		 * @param num 加減算する値
+		 */
+		 addDate : function(num) {
 			this.date.setTime(this.date.getTime() + num * 86400000);
 			return this;
 		},
 		
+		/**
+		 * 月計算
+		 * @param num 加減算する値
+		 */
 		addMonth : function(num) {
 			this.date = new Date(this.date.getFullYear(), this.date.getMonth() + num,
 								 this.date.getDate(), this.date.getHours(), this.date.getMinutes(), this.date.getSeconds());
 			return this;
-
 		},
 		
+		/**
+		 * 年計算
+		 * @param num 加減算する値
+		 */
 		addYear : function(num) {
 			return this.addMonth( num * 12 );
 		},
 		
+		/**
+		 * 曜日の文字列取得。微妙に国際化対応ｗ
+		 * @param lang 取得する言語。標準は日本語。
+		 */
 		getDay : function(lang) {
 			return exDate.RFC3339.DAY_OF_THE_WEEK[ lang ? lang : 'ja' ][ this.date.getDay() ];
 		},
 		
+		/**
+		 * 月の文字列取得。微妙に国際化対応ｗ
+		 * @param lang 取得する言語。標準は和暦ｗ
+		 */
 		getMonthString : function(lang) {
 			return exDate.RFC3339.MONTH[ lang ? lang : 'ja' ][ this.date.getMonth() ];
 		},
@@ -130,6 +168,9 @@ jQuery( function($){
 	 * 継承によるクラスメソッド、変数の定義
 	 */
 	$.extend(Vocalendar, {
+	
+		CALENDAR_CONTAINER : 'googleCalCNT',
+	
 		// Calendarクラスの配列
 		_calendars : [],
 
@@ -276,6 +317,12 @@ jQuery( function($){
 
 		// 検索開始
 		getEvents : function() {
+		
+			var calendarContainer = $('#' + Vocalendar.CALENDAR_CONTAINER);
+			if ( calendarContainer ) {
+				calendarContainer.fadeOut();
+			}
+		
 			var resultContainer = $('#' + Vocalendar.SearchUI.RESULT_CONTAINER);
 			resultContainer.empty();
 			resultContainer.append('検索中');
