@@ -14,6 +14,16 @@ jQuery( function($){
 
 	$.extend(exDate.RFC3339, {
 	
+		DAY_OF_THE_WEEK : {'ja' : ['日', '月', '火', '水', '木', '金', '土'],
+		                   'en' : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+		                   'dummy' : []
+		},
+		
+		MONTH : {'ja' : ['睦月', '如月', '弥生', '卯月', '皐月', '水無月', '文月', '葉月', '長月', '神無月', '霜月', '師走'],
+		         'en' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+		         'dummy' : []
+		},
+
 		parse : function( str ) {
 			var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 			if ( m ) {
@@ -52,28 +62,31 @@ jQuery( function($){
 
 	$.extend(exDate.RFC3339.prototype, {
 	
-		toString : function() {
-		
-			filZero = function( str ) {
-				return ('' + str).length == 1 ? '0' + str : str;
-			};
-		
-			var str = this.date.getFullYear();
-			str += '-';
-			str += filZero(this.date.getMonth() + 1 );
-			str += '-';
-			str += filZero(this.date.getDate());
-			str += 'T';
-			str += filZero(this.date.getHours());
-			str += ':';
-			str += filZero(this.date.getMinutes());
-			str += ':';
-			str += filZero(this.date.getSeconds());
-			str += 'Z';
-			return  str; 
+		_filZero : function( str ) {
+			return ('' + str).length == 1 ? '0' + str : str;
 		},
 		
-		addDays : function(num) {
+		toDateString : function( formatter ) {
+			var target = formatter ? formatter : 'yyyy-MM-dd';
+			target = target.replace('yyyy', this.date.getFullYear());
+			target = target.replace('MM', this._filZero(this.date.getMonth() + 1 ));
+			target = target.replace('dd', this._filZero(this.date.getDate()));
+			return  target; 
+		},
+		
+		toTimeString : function( formatter ) {
+			var target = formatter ? formatter : 'HH:mm:ss';
+			target = target.replace('HH', this._filZero(this.date.getHours()));
+			target = target.replace('mm', this._filZero(this.date.getMinutes()));
+			target = target.replace('ss', this._filZero(this.date.getSeconds()));
+			return  target; 
+		},
+	
+		toString : function() {
+			return this.toDateString() + 'T' + this.toTimeString() + 'Z'; 
+		},
+		
+		addDate : function(num) {
 			this.date.setTime(this.date.getTime() + num * 86400000);
 			return this;
 		},
@@ -87,6 +100,14 @@ jQuery( function($){
 		
 		addYear : function(num) {
 			return this.addMonth( num * 12 );
+		},
+		
+		getDay : function(lang) {
+			return exDate.RFC3339.DAY_OF_THE_WEEK[ lang ? lang : 'ja' ][ this.date.getDay() ];
+		},
+		
+		getMonthString : function(lang) {
+			return exDate.RFC3339.MONTH[ lang ? lang : 'ja' ][ this.date.getMonth() ];
 		},
 		
 		dummy : 'dummy'
@@ -281,37 +302,52 @@ jQuery( function($){
 			var events = $('<ul>').addClass('events');
 			jQuery.each( this.eventList, function( i, eventData) {
 				
+				var startData = exDate.RFC3339.parse(eventData.gd$when[0].startTime);
+				var endData   = exDate.RFC3339.parse(eventData.gd$when[0].endTime);
+				if ( !endData.isTimeEvent ) {
+					// 終日イベントだと終了日がなぜか+1されているので
+					endData.addDate(-1);
+				}
+
 				// イベント
 				var event = $('<li>').addClass('event').addClass( i % 2 == 0 ? 'even': 'odd' );
 				event.attr( 'id', 'event_' + i);
 				
 				// イベント属性
-				var title = $('<p>').addClass('title').add('shadeTrigger').text(eventData.title.$t);
-				var shadeContainer = $('<div>').addClass('shadeContainer').addClass('none');
+				var vclEvent = $('<article>').addClass('VCLevent').addClass(startData.getDay('en').toLowerCase());
+				if ( !startData.isTimeEvent ) {
+					vclEvent.addClass('allday');
+				}
+				var header = $('<section>').addClass('header');
+				var title = $('<h1>').addClass('title').text(eventData.title.$t);
+				var startContainer = $('<div>').addClass('start');
+				var startDate = $('<p>').addClass('date').text(startData.toDateString('yyyy年MM月dd日'));
+				var startTime = startData.isTimeEvent ? $('<p>').addClass('time').text(startData.toTimeString('HH時mm分')) : null;
+				var endContainer = $('<div>').addClass('end');
+				var endDate = $('<p>').addClass('date').text(endData.toDateString('yyyy年MM月dd日'));
+				var endTime = endData.isTimeEvent ? $('<p>').addClass('time').text(endData.toTimeString('HH時mm分')) : null;
+
 				var where = $('<p>').addClass('where').text(eventData.gd$where[0].valueString);
 				var content = $('<p>').addClass('content').text(eventData.content.$t);
-				var start = '';
-				var end   = '';
-				if ( eventData.gd$when ) {
-					var time  = eventData.gd$when[0];
-					var start = $('<p>').addClass('time start').text(time.startTime);
-					var end   = $('<p>').addClass('time end').text(time.endTime);
-				}
 				
-				// UIイベントを追加
-				title.click(function(event) {
-					var shadeTarget = jQuery(event.target).parent().find('.shadeContainer');
-					shadeTarget.toggleClass('none');
-				
-				});
+				var badge = $('<aside>').addClass('badge');
+				var month = $('<p>').addClass('month').text(startData.getMonthString('en').toUpperCase());
+				var day = $('<p>').addClass('day').text(startData.date.getDate());
+				var dow = $('<p>').addClass('dow').text(startData.getDay('en').toUpperCase());
 				
 				// 属性をイベントに追加
-				event.append(title);
-				event.append(shadeContainer);
-				shadeContainer.append(start);
-				shadeContainer.append(end);
-				shadeContainer.append(where);
-				shadeContainer.append(content);
+				event.append(vclEvent);
+				vclEvent.append(header).append(where).append(content).append(badge);
+				header.append(title).append(startContainer).append(endContainer);
+				startContainer.append(startDate);
+				if ( startTime ) {
+					startContainer.append(startTime);
+				}
+				endContainer.append(endDate);
+				if ( endTime ) {
+					endContainer.append(endTime);
+				}
+				badge.append(month).append(day).append(dow);
 
 				// ルートにイベントを追加
 				events.append(event);
