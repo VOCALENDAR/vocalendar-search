@@ -209,8 +209,8 @@ jQuery( function($){
 	 */
 	$.extend(Vocalendar.Calendar.prototype, {
 
-		//url : 'https://www.googleapis.com/calendar/v3/calendars/',
-		url : 'https://www.google.com/calendar/feeds/',
+		url : 'https://www.googleapis.com/calendar/v3/calendars/',
+		//url : 'https://www.google.com/calendar/feeds/',
 
 		// 検索パラメータ
 		param : {},
@@ -229,16 +229,14 @@ jQuery( function($){
 			if ( _completeFunc ) {
 				this.completeFunc = _completeFunc;
 			}
-			param['alt'] = 'json-in-script'
-			param['singleevents'] = true;
-			param['orderby'] = 'starttime';
-			param['sortorder'] = 'ascending';
-			// 設定しても反映されない・・・謎。
-			//param['recurrence-expansion-end'] = '2013-12-31T23:59:59Z';
-			param['start-max'] = (new exDate.RFC3339()).addYear(3).toString();
+			param['singleEvents'] = true;
+			param['orderBy'] = 'startTime';
+//			param['timeMin'] = param['timeMin'] ? param['timeMin'] : (new exDate.RFC3339()).toString();
+			param['timeMax'] = param['timeMax'] ? param['timeMax'] : (new exDate.RFC3339()).addYear(3).toString();
+			param['key'] = '' // この値はCommitしないこと
 			request = $.ajax({
-								//url: this.url + this.calendarId + '/events',
-								url: this.url + this.calendarId + '/public/full',
+								url: this.url + this.calendarId + '/events',
+								//url: this.url + this.calendarId + '/public/full',
 								type : 'GET',
 								data : param,
 								dataType: 'jsonp',
@@ -246,28 +244,24 @@ jQuery( function($){
 								success : function(json) {
 													this.result = json;
 													// 結果が0件
-													if ( !json.feed.entry ) {
+													if ( !json.items ) {
 														this.completeFunc();
 														return;
 													}
-													$.merge( this.eventList, json.feed.entry);
+													$.merge( this.eventList, json.items);
 
-													// 次ページがあるか？
-													var isNext = false;
-													jQuery.each( json.feed.link, function( i, link ) {
-														if ( link.rel == 'next' ) {
-															isNext = true;
-														}
-													});
-													if ( isNext ) {
+													if ( json.nextPageToken ) {
 														// 次ページがあったら繰り返し取得する
-														var startindex = json.feed.openSearch$startIndex.$t + 25;
-														param['start-index'] = startindex;
+														param['pageToken'] = json.nextPageToken;
 														this.getEvents(param);
-													} else {
-														// 次ページがなければ完了メソッドを呼び出す
-														this.completeFunc( this.eventList );
+														return;
 													}
+//													if ( json.nextSyncToken ) {
+//														param['syncToken'] = json.nextSyncToken;
+//														this.getEvents(param);
+//														return;
+//													}
+													this.completeFunc( this.eventList );
 												},
 								error : function(data) {
 											this.result = data;
@@ -349,8 +343,8 @@ jQuery( function($){
 			var events = $('<ul>').addClass('events');
 			jQuery.each( this.eventList, function( i, eventData) {
 				
-				var startData = exDate.RFC3339.parse(eventData.gd$when[0].startTime);
-				var endData   = exDate.RFC3339.parse(eventData.gd$when[0].endTime);
+				var startData = exDate.RFC3339.parse(eventData.start.dateTime ? eventData.start.dateTime : eventData.start.date);
+				var endData   = exDate.RFC3339.parse(eventData.end.dateTime ? eventData.end.dateTime : eventData.end.date);
 				if ( !endData.isTimeEvent ) {
 					// 終日イベントだと終了日がなぜか+1されているので
 					endData.addDate(-1);
@@ -366,7 +360,7 @@ jQuery( function($){
 					vclEvent.addClass('allday');
 				}
 				var header = $('<section>').addClass('header');
-				var title = $('<h1>').addClass('title').text(eventData.title.$t);
+				var title = $('<h1>').addClass('title').text(eventData.summary.$t);
 				var startContainer = $('<div>').addClass('start');
 				var startDate = $('<p>').addClass('date').text(startData.toDateString('yyyy年MM月dd日'));
 				var startTime = startData.isTimeEvent ? $('<p>').addClass('time').text(startData.toTimeString('HH時mm分')) : null;
@@ -374,8 +368,8 @@ jQuery( function($){
 				var endDate = $('<p>').addClass('date').text(endData.toDateString('yyyy年MM月dd日'));
 				var endTime = endData.isTimeEvent ? $('<p>').addClass('time').text(endData.toTimeString('HH時mm分')) : null;
 
-				var where = $('<p>').addClass('where').text(eventData.gd$where[0].valueString);
-				var content = $('<p>').addClass('content').text(eventData.content.$t);
+				var where = $('<p>').addClass('where').text(eventData.location);
+				var content = $('<p>').addClass('content').text(eventData.description);
 				
 				var badge = $('<aside>').addClass('badge');
 				var month = $('<p>').addClass('month').text(startData.getMonthString('en').toUpperCase());
